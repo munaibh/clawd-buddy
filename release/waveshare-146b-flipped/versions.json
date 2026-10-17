@@ -1,0 +1,7 @@
+[
+    {
+        "version": "0.1.0",
+        "note": "First release for the Waveshare ESP32-S3-Touch-LCD-1.46B: approve or deny Claude's permission requests from the round touchscreen, Clawd's face with mood eyes, clock and battery, mute/brightness/sleep controls, night mode, wake on lift, and softer chimes. Flipped variant for the Clawd case.",
+        "date": "2026-10-17"
+    }
+]

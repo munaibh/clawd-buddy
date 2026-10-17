@@ -1,0 +1,10 @@
+[
+  {
+    "id": "waveshare-146b",
+    "label": "ESP32-S3-Touch-LCD-1.46B (bare board or puck case)"
+  },
+  {
+    "id": "waveshare-146b-flipped",
+    "label": "ESP32-S3-Touch-LCD-1.46B in the Clawd case (screen flipped)"
+  }
+]
