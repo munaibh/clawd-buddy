@@ -1,0 +1,29 @@
+{
+  "name": "clawd-buddy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Claude desk companion for the Waveshare ESP32-S3-Touch-LCD-1.46B",
+  "workspaces": [
+    "app",
+    "web"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vp run -r dev",
+    "build": "vp run -r build",
+    "check": "vp run -r check",
+    "lint": "vp run -r lint",
+    "fmt": "vp run -r fmt",
+    "upload": "vp run --filter app upload",
+    "monitor": "vp run --filter app monitor",
+    "prepare": "vp config"
+  },
+  "devDependencies": {
+    "vite-plus": "0.3.2"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.2",
+    "vue": "3.5.42"
+  },
+  "packageManager": "npm@11.11.1"
+}
