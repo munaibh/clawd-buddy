@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-label="Clawd Buddy device (placeholder illustration)">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#2a1d18"/>
+      <stop offset="0.55" stop-color="#14100e"/>
+      <stop offset="1" stop-color="#0b0a09"/>
+    </radialGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e3876a"/>
+      <stop offset="1" stop-color="#c2603f"/>
+    </linearGradient>
+    <radialGradient id="glass" cx="42%" cy="32%" r="80%">
+      <stop offset="0" stop-color="#e39276"/>
+      <stop offset="1" stop-color="#d97757"/>
+    </radialGradient>
+    <radialGradient id="shadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#000" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="900" height="1100" fill="url(#bg)"/>
+
+  <!-- floor shadow -->
+  <ellipse cx="450" cy="842" rx="330" ry="40" fill="url(#shadow)"/>
+
+  <!-- Clawd: arms, body, two pairs of legs (one "pixel" = 54) -->
+  <g fill="url(#body)">
+    <rect x="135" y="460" width="66" height="72" rx="8"/>
+    <rect x="699" y="460" width="66" height="72" rx="8"/>
+    <rect x="195" y="250" width="510" height="510" rx="18"/>
+    <rect x="231" y="752" width="56" height="72" rx="6"/>
+    <rect x="339" y="752" width="56" height="72" rx="6"/>
+    <rect x="505" y="752" width="56" height="72" rx="6"/>
+    <rect x="613" y="752" width="56" height="72" rx="6"/>
+  </g>
+  <!-- top light -->
+  <rect x="195" y="250" width="510" height="10" rx="5" fill="#fff" opacity="0.18"/>
+
+  <!-- USB-C at the top of the head -->
+  <rect x="404" y="244" width="92" height="20" rx="10" fill="#3a2a24"/>
+
+  <!-- round screen: bezel, glass with Clawd's face -->
+  <circle cx="450" cy="505" r="214" fill="#1b1310"/>
+  <circle cx="450" cy="505" r="196" fill="url(#glass)"/>
+  <rect x="356" y="420" width="58" height="84" rx="8" fill="#1f1714"/>
+  <rect x="486" y="420" width="58" height="84" rx="8" fill="#1f1714"/>
+  <text x="450" y="602" text-anchor="middle" font-family="ui-rounded, 'SF Pro Rounded', system-ui, sans-serif" font-size="40" font-weight="700" fill="#1f1714">09:41</text>
+  <circle cx="434" cy="650" r="5" fill="#1f1714"/>
+  <circle cx="450" cy="650" r="5" fill="#1f1714" opacity="0.35"/>
+  <circle cx="466" cy="650" r="5" fill="#1f1714" opacity="0.35"/>
+  <!-- glass highlight -->
+  <path d="M330 380 a196 196 0 0 1 150 -68" stroke="#fff" stroke-opacity="0.35" stroke-width="10" stroke-linecap="round" fill="none"/>
+
+  <text x="450" y="960" text-anchor="middle" font-family="ui-rounded, 'SF Pro Rounded', system-ui, sans-serif" font-size="22" letter-spacing="6" fill="#8a7f7a">PLACEHOLDER</text>
+</svg>
