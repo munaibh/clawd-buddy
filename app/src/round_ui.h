@@ -40,6 +40,13 @@ enum { RND_PAGE_FACE, RND_PAGE_STATS, RND_PAGE_CONTROLS, RND_PAGES };
 static uint8_t  rndPage = RND_PAGE_FACE;
 static bool     rndNightOn = true;
 static bool     rndStayAwake = false;      // keep the screen on, whatever the power source
+
+// Lying on its back, screen up: drowsy eyes, then asleep after a while
+// without a touch (before the screen turns off on battery).
+static const int      RND_DROWSY = 100;      // an extra mood for rndEyes, beside the persona states
+static const uint32_t RND_DOZE_MS = 20000;
+static bool     rndLyingDown = false;
+static uint32_t rndLyingSince = 0;
 static uint32_t rndLastFrame = 0;
 static bool     rndDecisionAllow = false;  // what the user tapped, for feedback
 
@@ -205,6 +212,14 @@ static void rndEyes(int cx, int cy, float scale, int mood, int dx = 0, int dy = 
       rndCross(l, y, ew, CLAWD_INK);
       rndCross(r, y, ew, CLAWD_INK);
       break;
+    case RND_DROWSY: {
+      // lids half down from the top, and a slow, heavy blink
+      uint32_t ph = now % 5200;
+      int h = ph < 420 ? max(4, eh / 8) : eh * 2 / 5;
+      rndEye(l, y + (eh - h) / 2, ew, h, CLAWD_INK);
+      rndEye(r, y + (eh - h) / 2, ew, h, CLAWD_INK);
+      break;
+    }
     default: {
       // blink roughly every 4 s, with the odd double blink
       uint32_t ph = now % 4100;
@@ -240,6 +255,12 @@ static void rndFace() {
     if ((h >> 4) % 3 == 0) tx = ty = 0;                   // often just look ahead
     nextLook = now + 1800 + (h >> 20) % 2500;
   }
+  int mood = activeState;
+  if (rndLyingDown && (mood == P_IDLE || mood == P_SLEEP)) {
+    uint32_t still = now - max(lastInteractMs, rndLyingSince);
+    mood = still > RND_DOZE_MS ? P_SLEEP : RND_DROWSY;
+    tx = ty = 0;                                          // no wandering when dozy
+  }
   int gx = tx, gy = ty;
   if (activeState == P_BUSY || (tama.sessionsRunning && activeState == P_IDLE)) {
     gx = ((now / 900) & 1) ? 24 : -24;                    // reading
@@ -247,7 +268,7 @@ static void rndFace() {
   }
   lx += (gx - lx) * 0.3f;
   ly += (gy - ly) * 0.3f;
-  rndEyes(RND_C, 178, 1.0f, activeState, (int)lx, (int)ly);
+  rndEyes(RND_C, 178, 1.0f, mood, (int)lx, (int)ly);
 
   if (rndClockSet()) {
     char hm[6];
@@ -456,6 +477,18 @@ static void roundTick(bool dark) {
   bool now = roundNight();
   if (now != was && !dark) applyBrightness();
   was = now;
+
+  // Lying on its back: gravity along +z, the screen facing up. Checked a few
+  // times a second, with hysteresis so a wobble doesn't flick the eyes.
+  static uint32_t lastPose = 0;
+  if (!screenOff && millis() - lastPose > 200) {
+    lastPose = millis();
+    float ax, ay, az;
+    M5.Imu.getAccelData(&ax, &ay, &az);
+    bool flat = rndLyingDown ? az > 0.6f : (az > 0.8f && fabsf(ax) < 0.4f && fabsf(ay) < 0.4f);
+    if (flat && !rndLyingDown) rndLyingSince = millis();
+    rndLyingDown = flat;
+  }
 
   // Wake on lift: while the screen is off, compare gravity against where
   // it pointed when the screen went off. 0.35 g is a lift or a tilt of
