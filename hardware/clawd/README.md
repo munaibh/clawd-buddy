@@ -31,6 +31,9 @@ plungers line up with the side switches.
 
 0.2 mm layers, 3 walls, 20 % infill. PLA or PETG.
 
+`clawd.3mf` is a Bambu Studio project (A1 mini, 0.4 mm nozzle) with the case
+parts already laid out on plates.
+
 ## Hardware
 
 - 3 x **M2 x 6**: board to plate. No longer than 6 mm. Snug, don't force.
