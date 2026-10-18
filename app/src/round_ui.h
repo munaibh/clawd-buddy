@@ -22,7 +22,6 @@ static const int RND_MUTE_X = 106, RND_BRIGHT_X = 206, RND_SLEEP_X = 306;
 // Palette (RGB565).
 static const uint16_t CLAWD_ORANGE = 0xDBAA;   // #D97757
 static const uint16_t CLAWD_INK    = 0x18C3;   // #1A1A1A
-static const uint16_t CLAWD_PINK   = 0xF8B2;
 static const uint16_t RND_BG       = 0x1081;   // #12100E
 static const uint16_t RND_PANEL    = 0x20E3;   // #221F1C
 static const uint16_t RND_CREAM    = 0xEF5C;   // #ECE9E2
@@ -197,8 +196,8 @@ static void rndEyes(int cx, int cy, float scale, int mood, int dx = 0, int dy = 
       rndChevron(r, y, ew, CLAWD_INK);
       break;
     case P_HEART:
-      rndHeartShape(l, y, (int)(34 * scale), CLAWD_PINK);
-      rndHeartShape(r, y, (int)(34 * scale), CLAWD_PINK);
+      rndHeartShape(l, y, (int)(34 * scale), CLAWD_INK);
+      rndHeartShape(r, y, (int)(34 * scale), CLAWD_INK);
       break;
     case P_DIZZY:
       rndCross(l, y, ew, CLAWD_INK);
