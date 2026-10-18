@@ -89,6 +89,14 @@ already in its print orientation; none need supports.
 | `clawd_cable_claw_18mm.stl`, `_25mm.stl` | Half-size Clawd on a clip for an 18 or 25 mm desk edge. Snap a 4-4.5 mm cable into the notch on its head. Prints face down. |
 | `clawd_hat_party.stl`, `_beanie.stl`, `_crown.stl`, `_gradcap.stl`, `_top.stl` + `_top_brim.stl` | Little hats that plug into the USB-C opening on top of the head: a peg grips the opening's walls and stops short of the connector. Take the hat off to charge. Party, beanie and crown print peg down; the grad cap and the top hat print upside down. Slide the top hat's brim over its peg before plugging it in. If a hat is loose or tight, change `PEG_FIT` in `extras.py`. |
 
+| `clawd_hat_propeller.stl` + `_propeller_blades.stl` + `_propeller_cap.stl` | Propeller beanie. Drop the blades onto the axle and press the cap on (hole down); it spins. |
+| `clawd_hat_duck.stl`, `clawd_hat_ladybug.stl` | QA set: a rubber duck and a ladybug ("found a bug") that plug in like the hats. |
+| `clawd_arm_magnifier.stl` | QA set: Clawd holds a magnifying glass. Slides onto the right arm from the front. |
+| `clawd_arm_flag_pass.stl`, `clawd_arm_flag_fail.stl` | QA set: a PASS tick for the right arm and a FAIL cross for the left. Nice in green and red. |
+
+The arm pieces print face down and slide on from the front until they stop
+on the back of the arm; change `ARM_FIT` if they're loose or tight.
+
 For another desk thickness: `cable_claw(<mm>)` in `extras/extras.py`.
 
 ## Notes

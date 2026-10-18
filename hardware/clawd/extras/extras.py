@@ -171,14 +171,20 @@ def hat_party():
     return peg().union(cone).union(stripe).union(_ball(2.2, HEAD_TOP + 22.5))
 
 
-def hat_beanie():
+BEANIE_TOP = HEAD_TOP + 3 + 5 * 8 / 6         # the dome's flat top
+
+
+def _beanie():
     cuff = _box(-7.6, 7.6, HEAD_TOP, HEAD_TOP + 3, USB_Z - 4.8, USB_Z + 4.8).edges("|Y").fillet(2.4)
     secs = _plate(HEAD_TOP + 3, 7.2, 4.4)
     for i in range(1, 6):
         k = (1 - (i / 6) ** 2) ** 0.5
         secs = secs.workplane(offset=-8 / 6).ellipse(max(7.2 * k, 1.2), max(4.4 * k, 1.0))
-    dome = secs.loft(ruled=False)
-    return peg().union(cuff).union(dome).union(_ball(2.6, HEAD_TOP + 3 + 8 + 1.2))
+    return peg().union(cuff).union(secs.loft(ruled=False))
+
+
+def hat_beanie():
+    return _beanie().union(_ball(2.6, HEAD_TOP + 3 + 8 + 1.2))
 
 
 def hat_crown():
@@ -225,6 +231,142 @@ def hat_gradcap():
     return peg().union(skull).union(board).union(button).union(tassel)
 
 
+# ---------------------------------------------------- propeller beanie --
+# The beanie with an axle on top. The propeller prints flat with pitched
+# blades, drops onto the axle and is held by a press-on cap; it spins.
+
+AXLE_R, AXLE_H = 1.1, 3.9                    # hub + 0.3 play + the cap's hole
+HUB_R, HUB_T, HUB_HOLE = 3.0, 2.4, 1.35
+CAP_R, CAP_T = 2.4, 1.8
+
+
+def hat_propeller():
+    boss = cq.Workplane("XZ", origin=(0, BEANIE_TOP - 0.01, 0)).center(0, USB_Z).circle(2.2).extrude(-0.81)
+    axle = cq.Workplane("XZ", origin=(0, BEANIE_TOP + 0.8, 0)).center(0, USB_Z).circle(AXLE_R).extrude(-AXLE_H)
+    return _beanie().union(boss).union(axle)
+
+
+def propeller():
+    """Flat on the bed, blades thicker at the trailing edge so air turns it."""
+    hub = cq.Workplane("XY").circle(HUB_R).extrude(HUB_T)
+    p = hub
+    for sx in (-1, 1):
+        # cross-section across the blade (y), thin leading edge to thick trailing edge
+        prof = [(-2.4 * sx, 0), (2.4 * sx, 0), (2.4 * sx, 1.8), (-2.4 * sx, 0.5)]
+        blade = cq.Workplane("YZ", origin=(sx * (HUB_R - 0.5), 0, 0)).polyline(prof).close().extrude(sx * 12.5)
+        tip = cq.Workplane("XY").center(sx * (HUB_R + 12), 0).circle(2.4).extrude(1.8)
+        p = p.union(blade).union(tip.intersect(cq.Workplane("XY").center(sx * (HUB_R + 12), 0).rect(4.8, 4.8).extrude(1.8)))
+    return p.cut(cq.Workplane("XY").circle(HUB_HOLE).extrude(HUB_T + 1))
+
+
+def propeller_cap():
+    """Presses onto the axle above the propeller."""
+    return cq.Workplane("XY").circle(CAP_R).extrude(CAP_T).cut(cq.Workplane("XY").workplane(offset=0.6)
+                                                                .circle(AXLE_R - 0.05).extrude(CAP_T))
+
+
+# ------------------------------------------------------------- QA set --
+# For a QA engineer: a rubber duck and a ladybug that plug into the head,
+# and a magnifying glass and PASS / FAIL flags that slide onto the arms.
+
+def hat_duck():
+    """A rubber duck, side on, beak to Clawd's left as you look at it."""
+    body = (_plate(HEAD_TOP, 7.4, 5.0).workplane(offset=-3).ellipse(8.6, 5.8)
+            .workplane(offset=-3).ellipse(7.8, 5.3).workplane(offset=-2.2).ellipse(5.0, 3.6).loft(ruled=False))
+    head = _ball(4.2, HEAD_TOP + 10.6).translate((3.6, 0, 0))
+    beak = (cq.Workplane("XY", origin=(0, 0, USB_Z - 1.7)).polyline(            # sloped underneath, so it prints
+        [(6.6, HEAD_TOP + 8.8), (10.4, HEAD_TOP + 9.8), (10.4, HEAD_TOP + 10.9), (6.6, HEAD_TOP + 11.0)]).close().extrude(3.4))
+    tail = (cq.Workplane("XY", origin=(0, 0, USB_Z - 1.6)).polyline(
+        [(-6.5, HEAD_TOP + 4), (-10.2, HEAD_TOP + 8.2), (-6.0, HEAD_TOP + 7.6)]).close().extrude(3.2))
+    duck = peg().union(body).union(head).union(beak).union(tail)
+    for sz in (-1, 1):                                          # eyes, both sides
+        duck = duck.cut(cq.Workplane("XY", origin=(0, 0, USB_Z + sz * 3.4)).center(5.2, HEAD_TOP + 11.6)
+                        .circle(0.7).extrude(sz * 3))
+    return duck
+
+
+LB_RX, LB_RZ, LB_H = 7.2, 5.4, 5.6           # ladybug shell
+
+
+def hat_ladybug():
+    secs = _plate(HEAD_TOP, LB_RX, LB_RZ)
+    for i in range(1, 6):
+        k = (1 - (i / 6) ** 2) ** 0.5
+        secs = secs.workplane(offset=-LB_H / 6).ellipse(max(LB_RX * k, 1.0), max(LB_RZ * k, 0.8))
+    shell = secs.loft(ruled=False)
+    head = _ball(3.0, HEAD_TOP + 0.6).translate((LB_RX - 0.6, 0, 0)).intersect(
+        _box(-20, 20, HEAD_TOP, HEAD_TOP + 10, USB_Z - 10, USB_Z + 10))
+    bug = peg().union(shell).union(head)
+    bug = bug.cut(_box(-LB_RX - 1, LB_RX - 1.6, HEAD_TOP + 3.4, HEAD_TOP + 10, USB_Z - 0.35, USB_Z + 0.35))   # wing split
+    for x, dz in ((-3.6, 2.4), (-3.6, -2.4), (1.4, 2.8), (1.4, -2.8), (-5.8, 0.0)):    # spots
+        k = max(0.0, 1 - (x / LB_RX) ** 2 - (dz / LB_RZ) ** 2)
+        top = HEAD_TOP + LB_H * k ** 0.5
+        bug = bug.cut(cq.Workplane("XZ", origin=(0, top - 0.6, 0)).center(x, USB_Z + dz).circle(1.0).extrude(-3))
+    return bug
+
+
+ARM_FIT = 0.05                               # clearance per side round the arm
+SLEEVE_T = 1.2
+
+
+def arm_sleeve(side):
+    """A U over the end of an arm (side +1 right, -1 left as you look at
+    Clawd), slid on from the front and stopped by a wall at the back."""
+    y0, y1 = case.ARM_Y
+    end = side * (BODY_W / 2 + U)
+    xa, xb = sorted((side * (BODY_W / 2 + 1.5), end + side * (ARM_FIT + SLEEVE_T)))
+    outer = _box(xa, xb, y0 - ARM_FIT - SLEEVE_T, y1 + ARM_FIT + SLEEVE_T, Z_BACK - SLEEVE_T, RIM)
+    ia, ib = sorted((side * (BODY_W / 2 + 1.0), end + side * ARM_FIT))
+    return outer.cut(_box(ia, ib, y0 - ARM_FIT, y1 + ARM_FIT, Z_BACK, RIM + 1)), end + side * (ARM_FIT + SLEEVE_T)
+
+
+def _flat(points, t=3.0):
+    """A 2.5D shape in the face plane, the front 3 mm, so it prints on the bed."""
+    return cq.Workplane("XY", origin=(0, 0, RIM - t)).polyline(points).close().extrude(t)
+
+
+def _bar(x0, y0, x1, y1, w, t=3.0):
+    dx, dy = x1 - x0, y1 - y0
+    n = (dx * dx + dy * dy) ** 0.5
+    ox, oy = -dy / n * w / 2, dx / n * w / 2
+    return _flat([(x0 + ox, y0 + oy), (x1 + ox, y1 + oy), (x1 - ox, y1 - oy), (x0 - ox, y0 - oy)], t)
+
+
+def arm_magnifier():
+    sleeve, out = arm_sleeve(+1)
+    ym = sum(case.ARM_Y) / 2
+    cx, cy = out + 9.5, ym + 11
+    handle = _bar(out, ym, cx - 4.6, cy - 4.6, 2.6)          # from the sleeve's face into the ring
+    ring = (cq.Workplane("XY", origin=(0, 0, RIM - 3)).center(cx, cy).circle(7.2).circle(5.4).extrude(3))
+    lens = cq.Workplane("XY", origin=(0, 0, RIM - 0.8)).center(cx, cy).circle(5.6).extrude(0.8)   # thin lens, prints first
+    return sleeve.union(handle).union(ring).union(lens)
+
+
+def arm_flag(passed):
+    side = 1 if passed else -1
+    sleeve, out = arm_sleeve(side)
+    top = case.ARM_Y[1] + ARM_FIT + SLEEVE_T
+    px0, px1 = sorted((out, out - side * 2.4))
+    pole = _flat([(px0, top - 0.5), (px1, top - 0.5), (px1, top + 26), (px0, top + 26)])
+    fx0, fx1 = sorted((out - side * 1.2, out + side * 15))
+    flag = _flat([(fx0, top + 15), (fx1, top + 15), (fx1, top + 26), (fx0, top + 26)], 1.8)
+    fc = ((fx0 + fx1) / 2, top + 20.5)
+    if passed:                                                   # a tick, sunk into the front
+        mark = _bar(fc[0] - 3.4, fc[1], fc[0] - 1.0, fc[1] - 2.6, 1.5, 0.7).union(
+            _bar(fc[0] - 1.6, fc[1] - 2.6, fc[0] + 3.8, fc[1] + 3.0, 1.5, 0.7))
+    else:                                                        # a cross
+        mark = _bar(fc[0] - 3, fc[1] - 3, fc[0] + 3, fc[1] + 3, 1.5, 0.7).union(
+            _bar(fc[0] - 3, fc[1] + 3, fc[0] + 3, fc[1] - 3, 1.5, 0.7))
+    knob = cq.Workplane("XY", origin=(0, 0, RIM - 3)).center((px0 + px1) / 2, top + 26.6).circle(1.8).extrude(3)
+    return sleeve.union(pole).union(flag).union(knob).cut(mark)
+
+
+def face_down(wp):
+    """Front face on the print bed."""
+    wp = wp.rotate((0, 0, 0), (0, 1, 0), 180)
+    return wp.translate((0, 0, -wp.val().BoundingBox().zmin))
+
+
 if __name__ == "__main__":
     export(bed().translate((0, 0, BED_T)), "clawd_bed.stl")
     bl = blanket().rotate((0, 0, 0), (0, 1, 0), 180)                     # top down on the print bed
@@ -237,3 +379,11 @@ if __name__ == "__main__":
     export(lay_flat(hat_gradcap(), flip=True), "clawd_hat_gradcap.stl")
     export(lay_flat(hat_top(), flip=True), "clawd_hat_top.stl")
     export(lay_flat(hat_top_brim()), "clawd_hat_top_brim.stl")
+    export(lay_flat(hat_propeller()), "clawd_hat_propeller.stl")
+    export(propeller(), "clawd_hat_propeller_blades.stl")
+    export(propeller_cap(), "clawd_hat_propeller_cap.stl")
+    export(lay_flat(hat_duck()), "clawd_hat_duck.stl")
+    export(lay_flat(hat_ladybug()), "clawd_hat_ladybug.stl")
+    export(face_down(arm_magnifier()), "clawd_arm_magnifier.stl")
+    export(face_down(arm_flag(True)), "clawd_arm_flag_pass.stl")
+    export(face_down(arm_flag(False)), "clawd_arm_flag_fail.stl")
