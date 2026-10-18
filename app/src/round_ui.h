@@ -33,11 +33,13 @@ static const int RND_STATUS_Y = 44, RND_LABEL_Y = 90, RND_DOTS_Y = 388;
 
 // Night mode: 22:00-07:00 by the RTC, once it has been set.
 static const uint8_t RND_NIGHT_FROM = 22, RND_NIGHT_TO = 7;
-static const int     RND_NIGHT_Y = 340;    // toggle row on the controls page
+static const int     RND_TOGGLE_Y = 340;   // night and stay-awake toggles on the controls page
+static const int     RND_TOGGLE_W = 136, RND_NIGHT_X = RND_C - 72, RND_AWAKE_X = RND_C + 72;
 
 enum { RND_PAGE_FACE, RND_PAGE_STATS, RND_PAGE_CONTROLS, RND_PAGES };
 static uint8_t  rndPage = RND_PAGE_FACE;
 static bool     rndNightOn = true;
+static bool     rndStayAwake = false;      // keep the screen on, whatever the power source
 static uint32_t rndLastFrame = 0;
 static bool     rndDecisionAllow = false;  // what the user tapped, for feedback
 
@@ -326,6 +328,25 @@ static void rndSun(int cx, int cy, uint16_t col) {
   }
 }
 
+// A pill that's orange when on.
+static void rndToggle(int cx, const char* label, bool on) {
+  TFT_eSPI& c = M5.canvas();
+  int x = cx - RND_TOGGLE_W / 2, y = RND_TOGGLE_Y - 14;
+  if (on) c.fillRoundRect(x, y, RND_TOGGLE_W, 28, 14, CLAWD_ORANGE);
+  else    c.drawRoundRect(x, y, RND_TOGGLE_W, 28, 14, RND_DIM);
+  rndText(&fonts::DejaVu12, MC_DATUM, on ? CLAWD_INK : RND_DIM, on ? CLAWD_ORANGE : RND_BG, label, cx, RND_TOGGLE_Y);
+}
+
+static bool rndOnToggle(int x, int y, int cx) {
+  return abs(y - RND_TOGGLE_Y) <= 18 && abs(x - cx) <= RND_TOGGLE_W / 2 + 4;
+}
+
+static void rndSavePref(const char* key, bool v) {
+  _prefs.begin("buddy", false);
+  _prefs.putBool(key, v);
+  _prefs.end();
+}
+
 static void rndControls() {
   TFT_eSPI& c = M5.canvas();
   rndStatus();
@@ -354,11 +375,10 @@ static void rndControls() {
   rndText(&fonts::DejaVu12, MC_DATUM, tama.connected ? RND_DIM : RND_DENY, RND_BG,
           tama.connected ? "Claude linked" : "Claude not connected", RND_C, 300);
 
-  char nl[32];
-  snprintf(nl, sizeof(nl), "night %02u-%02u  %s", RND_NIGHT_FROM, RND_NIGHT_TO, rndNightOn ? "on" : "off");
-  uint16_t ncol = rndNightOn ? CLAWD_ORANGE : RND_DIM;
-  c.drawRoundRect(RND_C - 80, RND_NIGHT_Y - 14, 160, 28, 14, ncol);
-  rndText(&fonts::DejaVu12, MC_DATUM, ncol, RND_BG, nl, RND_C, RND_NIGHT_Y);
+  char nl[24];
+  snprintf(nl, sizeof(nl), "night %02u-%02u", RND_NIGHT_FROM, RND_NIGHT_TO);
+  rndToggle(RND_NIGHT_X, nl, rndNightOn);
+  rndToggle(RND_AWAKE_X, "stay awake", rndStayAwake);
   rndDots(RND_CREAM, RND_PANEL);
 }
 
@@ -417,6 +437,7 @@ static void rndPasskey() {
 static void roundInit() {
   _prefs.begin("buddy", true);
   rndNightOn = _prefs.getBool("night", true);
+  rndStayAwake = _prefs.getBool("awake", false);
   _prefs.end();
 }
 
@@ -513,12 +534,14 @@ static void roundTap(int x, int y, bool inPrompt) {
       brightLevel = (brightLevel + 1) % 5;
       applyBrightness();
       beep(1800, 30);
-    } else if (abs(y - RND_NIGHT_Y) <= 18 && abs(x - RND_C) <= 90) {
+    } else if (rndOnToggle(x, y, RND_NIGHT_X)) {
       rndNightOn = !rndNightOn;
-      _prefs.begin("buddy", false);
-      _prefs.putBool("night", rndNightOn);
-      _prefs.end();
+      rndSavePref("night", rndNightOn);
       applyBrightness();
+      beep(1800, 30);
+    } else if (rndOnToggle(x, y, RND_AWAKE_X)) {
+      rndStayAwake = !rndStayAwake;
+      rndSavePref("awake", rndStayAwake);
       beep(1800, 30);
     } else if (rndInCircle(x, y, RND_SLEEP_X, RND_CTL_Y, RND_CTL_R + 6)) {
       M5.Axp.SetLDO2(false);
