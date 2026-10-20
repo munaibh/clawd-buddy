@@ -69,6 +69,7 @@ class HalAxp {
   void  SetLDO2(bool on);              // backlight + panel refresh on/off
   float GetVBusVoltage();              // 5.0 when on USB, else 0
   float GetBatVoltage();
+  int   GetBatLevel();                 // 0..100, steady while charging
   float GetBatCurrent() { return 0; }
   float GetTempInAXP192() { return temperatureRead(); }
   uint8_t GetBtnPress();               // 0x02 = short press of PWR key

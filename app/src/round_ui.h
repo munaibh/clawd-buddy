@@ -91,16 +91,7 @@ static void rndDots(uint16_t on, uint16_t off) {
     c.fillCircle(RND_C - 16 + i * 16, RND_DOTS_Y, 3, i == rndPage ? on : off);
 }
 
-static int rndBatteryPct() {
-  int mv = (int)(M5.Axp.GetBatVoltage() * 1000);
-  int pct = (mv - 3200) / 10;
-  pct = pct < 0 ? 0 : pct > 100 ? 100 : pct;
-  // On battery the charge only goes down, so never show it creeping back up.
-  static int shown = -1;
-  bool charging = M5.Axp.GetVBusVoltage() > 4.0f;
-  if (shown < 0 || charging || pct < shown) shown = pct;
-  return shown;
-}
+static int rndBatteryPct() { return M5.Axp.GetBatLevel(); }
 
 // Top of every dark page: the time and a small battery.
 static void rndStatus() {

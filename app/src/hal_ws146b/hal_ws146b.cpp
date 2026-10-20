@@ -392,31 +392,99 @@ void HalAxp::SetLDO2(bool on) {
   ledcWrite(PIN_BL, on ? blLevel * 1023 / 100 : 0);
 }
 
-// The ADC reading is noisy by tens of mV, enough to flip the percentage
-// back and forth. Average a burst of samples, then smooth over ~10 s.
-float HalAxp::GetBatVoltage() {
-  static float smooth = 0;
-  static uint32_t last = 0;
+// The battery as seen through its ADC line: the board has no VBUS sense and
+// no charge gauge, so everything comes from the cell's voltage.
+//
+// A charger lifts the cell to ~4.2 V the moment it's plugged in and lets go
+// the moment it's pulled, so plugging and unplugging show up as a sudden
+// step in the voltage: 60 mV or more within a couple of seconds, where the
+// backlight or the radio move it far less. Those steps flip the USB state
+// straight away; a slow 10 s average gives the resting reading. A connected
+// USB host settles it outright.
+static float batSlow = 0, batFast = 0;
+static float batWindow[8];            // batFast every 250 ms, the last 2 s
+static int   batWindowAt = 0;
+static bool  batCharger = false;
+static uint32_t batLast = 0, batWindowLast = 0, batHighSince = 0;
+
+static void batSample() {
+  uint32_t now = millis();
+  if (batSlow != 0 && now - batLast < 100) return;
   uint32_t sum = 0;
   for (int i = 0; i < 16; i++) sum += analogReadMilliVolts(PIN_BAT_ADC);
   float v = sum / 16.0f * 3.0f / 1000.0f / 0.990476f;
-  uint32_t now = millis();
-  if (smooth == 0 || fabsf(v - smooth) > 0.3f) smooth = v;   // first read, or plugged/unplugged
-  else smooth += (v - smooth) * min(1.0f, (now - last) / 10000.0f);
-  last = now;
-  return smooth;
+  if (batSlow == 0) {
+    batSlow = batFast = v;
+    for (float& w : batWindow) w = v;
+    batCharger = usb_serial_jtag_is_connected() || v < 2.5f || v >= 4.20f;
+  } else {
+    float dt = (float)(now - batLast);
+    batFast += (v - batFast) * min(1.0f, dt / 1000.0f);
+    batSlow += (v - batSlow) * min(1.0f, dt / 10000.0f);
+  }
+  batLast = now;
+  if (now - batWindowLast >= 250) {
+    batWindowLast = now;
+    batWindow[batWindowAt] = batFast;
+    batWindowAt = (batWindowAt + 1) % 8;
+  }
+  float lo = batWindow[0], hi = batWindow[0];
+  for (float w : batWindow) lo = min(lo, w), hi = max(hi, w);
+
+  bool host = usb_serial_jtag_is_connected();
+  bool was = batCharger;
+  if (host) batCharger = true;
+  else if (batFast < 2.5f) batCharger = true;                  // no battery: running off USB
+  else if (!batCharger && batFast - lo > 0.06f) batCharger = true;    // stepped up: plugged in
+  else if (batCharger && hi - batFast > 0.06f) batCharger = false;    // stepped down: unplugged
+  // Booted on a charger there's no step to see: a cell held at the
+  // charge-termination voltage for a while can only be on one.
+  if (batFast >= 4.19f) {
+    if (!batHighSince) batHighSince = now;
+    if (now - batHighSince > 5000) batCharger = true;
+  } else {
+    batHighSince = 0;
+  }
+  if (batCharger != was) {
+    // Start the averages afresh at the new level instead of gliding over.
+    batSlow = batFast;
+    for (float& w : batWindow) w = batFast;
+  }
+}
+
+float HalAxp::GetBatVoltage() {
+  batSample();
+  return batSlow;
 }
 
 float HalAxp::GetVBusVoltage() {
-  // No VBUS sense line, so infer it: a live USB host link, no battery at all,
-  // or the cell sitting at charge-termination voltage (only a charger holds
-  // it there). Hysteresis keeps a freshly unplugged full cell from flapping.
-  static bool charger = false;
-  if (usb_serial_jtag_is_connected()) return 5.0f;
-  float v = GetBatVoltage();
-  if (v < 2.5f || v >= 4.20f) charger = true;
-  else if (v < 4.10f)         charger = false;
-  return charger ? 5.0f : 0.0f;
+  batSample();
+  return batCharger ? 5.0f : 0.0f;
+}
+
+// While charging the voltage says nothing about the charge (the charger holds
+// it near 4.2 V), so the level counts up from where it was at a typical
+// charge rate. On battery it follows the resting voltage, and only ever down.
+int HalAxp::GetBatLevel() {
+  static int shown = -1;
+  static uint32_t lastStep = 0;
+  batSample();
+  int rest = (int)((batSlow - 3.2f) * 100);
+  rest = rest < 0 ? 0 : rest > 100 ? 100 : rest;
+  uint32_t now = millis();
+  if (shown < 0) {
+    shown = rest;
+    lastStep = now;
+  } else if (batCharger) {
+    if (now - lastStep >= 40000) {
+      lastStep = now;
+      if (shown < 100) shown++;
+    }
+  } else {
+    lastStep = now;
+    if (rest < shown) shown = rest;
+  }
+  return shown;
 }
 
 uint8_t HalAxp::GetBtnPress() {
