@@ -261,6 +261,16 @@ static void rndFace() {
   ly += (gy - ly) * 0.3f;
   rndEyes(RND_C, 178, 1.0f, mood, (int)lx, (int)ly);
 
+  // What Claude is up to, under the eyes: the desktop's one-line summary
+  // ("reading file...", "approve: Bash"), while a session is working or
+  // waiting. Nothing when idle, so the face stays clean.
+  if (tama.connected && (tama.sessionsRunning || tama.sessionsWaiting) && tama.msg[0]) {
+    static char rows[2][32];
+    uint8_t n = rndChop(tama.msg, 24, rows, 2);
+    for (uint8_t i = 0; i < n; i++)
+      rndText(&fonts::DejaVu18, MC_DATUM, CLAWD_INK, CLAWD_ORANGE, rows[i], RND_C, 262 + i * 20);
+  }
+
   if (rndClockSet()) {
     char hm[6];
     snprintf(hm, sizeof(hm), "%02u:%02u", _clkTm.Hours, _clkTm.Minutes);
