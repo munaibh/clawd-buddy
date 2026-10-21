@@ -6,7 +6,7 @@ Bluetooth: permission requests pop up on the screen with big **Allow** /
 **Deny** buttons, and the rest of the time Clawd's face keeps you company.
 
 Pages (swipe left/right): **Clawd's face** (eyes follow what Claude is doing,
-small clock) - **Home** (pet, big clock, battery, activity) - **Controls**
+a line saying what it's up to, small clock) - **Home** (pet, big clock, battery, activity) - **Controls**
 (mute, brightness, sleep, night mode). Approval cards take over whenever
 Claude needs you. Wakes when picked up; dims and goes quiet at night.
 
@@ -148,5 +148,7 @@ entry in `release/variants.json`, then build.
 In the Claude desktop app: **Help -> Troubleshooting -> Enable Developer
 Mode**, then **Developer -> Open Hardware Buddy...**, **Connect**, pick
 **Claude-XXXX** and type the passkey shown on the device. It reconnects by
-itself after that. Only sessions in the desktop app (Claude Code or Cowork)
-reach the device.
+itself after that. Only Claude Code sessions in the desktop app reach the
+device. Cowork doesn't, even though Anthropic's README lists it: a local
+Cowork task leaves the session count at 0 and sends no approvals, including
+its "add this folder" requests (tested October 2026).
