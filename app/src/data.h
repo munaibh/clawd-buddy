@@ -23,6 +23,7 @@ struct TamaState {
 #else
   char     promptHint[44];
 #endif
+  char     said[96];         // the start of Claude's last reply, from a turn event
 };
 
 // ---------------------------------------------------------------------------
@@ -75,6 +76,43 @@ static void _applyJson(const char* line, TamaState* out) {
   JsonDocument doc;
   if (deserializeJson(doc, line)) return;
   if (xferCommand(doc)) { _lastLiveMs = millis(); return; }
+
+  // A finished turn: {"evt":"turn","role":"assistant","content":[...]}. Keep
+  // the start of its last text block for the "done" bubble. It isn't a
+  // heartbeat, so nothing else changes: falling through would clear a
+  // pending prompt until the next snapshot.
+  if (doc["evt"].is<const char*>()) {
+    if (strcmp(doc["evt"] | "", "turn") == 0 && strcmp(doc["role"] | "", "assistant") == 0) {
+      const char* text = nullptr;
+      for (JsonVariant b : doc["content"].as<JsonArray>())
+        if (strcmp(b["type"] | "", "text") == 0) text = b["text"] | (const char*)nullptr;
+      if (text && *text) {
+        size_t n = 0;
+        bool space = true;   // collapse newlines and runs of spaces, trim the start
+        for (const uint8_t* c = (const uint8_t*)text; *c && n < sizeof(out->said) - 1; c++) {
+          char ch = (char)*c;
+          // The fonts are ASCII: curly quotes and dashes become plain ones,
+          // other non-ASCII characters (accents, emoji) are left out.
+          if (*c >= 0x80) {
+            ch = 0;
+            if (c[0] == 0xE2 && c[1] == 0x80 && c[2]) {
+              uint8_t k = c[2];
+              ch = (k == 0x98 || k == 0x99) ? '\'' : (k == 0x9C || k == 0x9D) ? '"' : (k == 0x93 || k == 0x94) ? '-' : 0;
+            }
+            while ((c[1] & 0xC0) == 0x80) c++;   // past the continuation bytes
+            if (!ch) continue;
+          }
+          bool ws = ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t';
+          if (ws && space) continue;
+          out->said[n++] = ws ? ' ' : ch;
+          space = ws;
+        }
+        out->said[n] = 0;
+      }
+    }
+    _lastLiveMs = millis();
+    return;
+  }
 
   // Bridge sends {"time":[epoch_sec, tz_offset_sec]}; gmtime_r on the
   // adjusted epoch yields local components including weekday.

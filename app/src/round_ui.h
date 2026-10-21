@@ -252,35 +252,50 @@ static void rndFace() {
     mood = still > RND_DOZE_MS ? P_SLEEP : RND_DROWSY;
     tx = ty = 0;                                          // no wandering when dozy
   }
+  // What Claude is up to: the desktop's one-line summary ("reading file...",
+  // "approve: Bash"), while a session is working or waiting. It takes the
+  // top half like a dark speech bubble, the same look as an approval card,
+  // and Clawd moves down and looks up at it. Nothing when idle.
+  bool talking = tama.connected && (tama.sessionsRunning || tama.sessionsWaiting) && tama.msg[0];
+  // After a job finishes: the start of Claude's reply for a little while.
+  bool done = !talking && (int32_t)(doneUntil - now) > 0;
+
   int gx = tx, gy = ty;
   if (activeState == P_BUSY || (tama.sessionsRunning && activeState == P_IDLE)) {
     gx = ((now / 900) & 1) ? 24 : -24;                    // reading
     gy = 6;
   }
+  if (talking || done) gy = -8;                           // reading the bubble above
   lx += (gx - lx) * 0.3f;
   ly += (gy - ly) * 0.3f;
-  rndEyes(RND_C, 178, 1.0f, mood, (int)lx, (int)ly);
 
-  // What Claude is up to, under the eyes: the desktop's one-line summary
-  // ("reading file...", "approve: Bash"), while a session is working or
-  // waiting. Nothing when idle, so the face stays clean.
-  if (tama.connected && (tama.sessionsRunning || tama.sessionsWaiting) && tama.msg[0]) {
+  int clockY = 318;
+  if (talking || done) {
+    const int BOTTOM = 196;
+    c.fillRect(0, 0, RND, BOTTOM, RND_BG);
+    c.fillTriangle(RND_C - 14, BOTTOM - 1, RND_C + 14, BOTTOM - 1, RND_C, BOTTOM + 14, RND_BG);   // tail down to Clawd
+    rndLabel(done ? "DONE" : "CLAUDE", 70);
     static char rows[2][32];
-    uint8_t n = rndChop(tama.msg, 24, rows, 2);
+    uint8_t n = rndChop(done ? (tama.said[0] ? tama.said : "all finished") : tama.msg, 20, rows, 2);
+    int y0 = n > 1 ? 112 : 128;
     for (uint8_t i = 0; i < n; i++)
-      rndText(&fonts::DejaVu18, MC_DATUM, CLAWD_INK, CLAWD_ORANGE, rows[i], RND_C, 262 + i * 20);
+      rndText(&fonts::DejaVu24, MC_DATUM, RND_CREAM, RND_BG, rows[i], RND_C, y0 + i * 32);
+    rndEyes(RND_C, 262, 0.75f, mood, (int)(lx * 0.75f), (int)(ly * 0.75f));
+    clockY = 340;
+  } else {
+    rndEyes(RND_C, 178, 1.0f, mood, (int)lx, (int)ly);
   }
 
   if (rndClockSet()) {
     char hm[6];
     snprintf(hm, sizeof(hm), "%02u:%02u", _clkTm.Hours, _clkTm.Minutes);
-    rndText(&fonts::DejaVu24, MC_DATUM, CLAWD_INK, CLAWD_ORANGE, hm, RND_C, 318);
+    rndText(&fonts::DejaVu24, MC_DATUM, CLAWD_INK, CLAWD_ORANGE, hm, RND_C, clockY);
   }
   int pct = rndBatteryPct();
   if (pct <= 20 && !_onUsb) {
     char b[8];
     snprintf(b, sizeof(b), "%d%%", pct);
-    rndText(&fonts::DejaVu12, MC_DATUM, CLAWD_INK, CLAWD_ORANGE, b, RND_C, 350);
+    rndText(&fonts::DejaVu12, MC_DATUM, CLAWD_INK, CLAWD_ORANGE, b, RND_C, clockY + (clockY != 318 ? 22 : 32));
   }
   rndDots(CLAWD_INK, rndBlend(CLAWD_ORANGE, CLAWD_INK, 0.35f));
 }

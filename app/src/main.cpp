@@ -90,6 +90,7 @@ const uint32_t SCREEN_OFF_MS = 30000;
 bool     napping = false;
 uint32_t napStartMs = 0;
 uint32_t promptArrivedMs = 0;
+uint32_t doneUntil = 0;   // showing the "done" bubble on the face until then
 
 // Face-down = Z-axis dominant and negative. Debounced so a toss doesn't count.
 static bool isFaceDown() {
@@ -1150,6 +1151,25 @@ void loop() {
       applyDisplayMode();
       characterInvalidate();
       if (buddyMode) buddyInvalidate();
+    }
+  }
+
+  // A job finishing: a session stops generating with nothing waiting on you.
+  // Between tool calls a session can stop for a moment and start again, so
+  // the drop has to hold for a few seconds before it counts.
+  static uint8_t  wasRunning = 0;
+  static uint32_t dropAt = 0;
+  uint8_t running = tama.connected ? tama.sessionsRunning : 0;
+  if (running < wasRunning) dropAt = now + 4000;
+  if (running > wasRunning) dropAt = doneUntil = 0;
+  wasRunning = running;
+  if (dropAt && (int32_t)(now - dropAt) >= 0) {
+    dropAt = 0;
+    if (!tama.sessionsWaiting && !tama.promptId[0]) {
+      doneUntil = now + 20000;
+      wake();
+      triggerOneShot(P_CELEBRATE, 2500);
+      beep(1568, 70); beep(2093, 120);   // night mode keeps this one quiet
     }
   }
 
