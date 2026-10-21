@@ -1166,7 +1166,11 @@ void loop() {
   if (dropAt && (int32_t)(now - dropAt) >= 0) {
     dropAt = 0;
     if (!tama.sessionsWaiting && !tama.promptId[0]) {
-      doneUntil = now + 20000;
+      // Only a reply that came in as this job finished belongs to it. An older
+      // one is from an earlier job, or from another session, and a long final
+      // reply (over 4KB) never arrives at all: then just say it's finished.
+      if (now - tama.saidAt > 12000) tama.said[0] = 0;
+      doneUntil = now + (running ? 6000 : 20000);   // briefly, if other sessions are still going
       wake();
       triggerOneShot(P_CELEBRATE, 2500);
       beep(1568, 70); beep(2093, 120);   // night mode keeps this one quiet

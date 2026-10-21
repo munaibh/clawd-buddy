@@ -24,6 +24,7 @@ struct TamaState {
   char     promptHint[44];
 #endif
   char     said[96];         // the start of Claude's last reply, from a turn event
+  uint32_t saidAt;           // when it arrived
 };
 
 // ---------------------------------------------------------------------------
@@ -108,6 +109,7 @@ static void _applyJson(const char* line, TamaState* out) {
           space = ws;
         }
         out->said[n] = 0;
+        out->saidAt = millis();
       }
     }
     _lastLiveMs = millis();

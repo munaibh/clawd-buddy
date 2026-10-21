@@ -256,9 +256,10 @@ static void rndFace() {
   // "approve: Bash"), while a session is working or waiting. It takes the
   // top half like a dark speech bubble, the same look as an approval card,
   // and Clawd moves down and looks up at it. Nothing when idle.
-  bool talking = tama.connected && (tama.sessionsRunning || tama.sessionsWaiting) && tama.msg[0];
-  // After a job finishes: the start of Claude's reply for a little while.
-  bool done = !talking && (int32_t)(doneUntil - now) > 0;
+  // After a job finishes: the start of Claude's reply for a little while,
+  // ahead of the activity of any sessions still going.
+  bool done = (int32_t)(doneUntil - now) > 0;
+  bool talking = !done && tama.connected && (tama.sessionsRunning || tama.sessionsWaiting) && tama.msg[0];
 
   int gx = tx, gy = ty;
   if (activeState == P_BUSY || (tama.sessionsRunning && activeState == P_IDLE)) {
