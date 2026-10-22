@@ -504,6 +504,7 @@ static void drawClock() {
 
 PersonaState derive(const TamaState& s) {
   if (!s.connected)            return P_IDLE;
+  if (s.limitHit)              return P_DIZZY;   // out of tokens: crossed-out eyes
   if (s.sessionsWaiting > 0)   return P_ATTENTION;
   if (s.recentlyCompleted)     return P_CELEBRATE;
   if (s.sessionsRunning >= 3)  return P_BUSY;
@@ -1175,6 +1176,15 @@ void loop() {
       triggerOneShot(P_CELEBRATE, 2500);
       beep(1568, 70); beep(2093, 120);   // night mode keeps this one quiet
     }
+  }
+
+  // Going dead (out of tokens) gets a sad slide down; coming back, a chirp.
+  static bool wasDead = false;
+  if (tama.limitHit != wasDead) {
+    wasDead = tama.limitHit;
+    wake();
+    if (wasDead) { beep(523, 120); beep(392, 160); beep(262, 320); }
+    else         { beep(1568, 60); beep(2093, 90); }
   }
 
   bool inPrompt = tama.promptId[0] && !responseSent;

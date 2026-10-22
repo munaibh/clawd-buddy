@@ -246,6 +246,33 @@ static void rndFace() {
     if ((h >> 4) % 3 == 0) tx = ty = 0;                   // often just look ahead
     nextLook = now + 1800 + (h >> 20) % 2500;
   }
+  // Out of tokens: Clawd plays dead, drained of colour with crossed-out eyes
+  // and a flatline, until Claude is working again.
+  if (tama.connected && tama.limitHit) {
+    c.fillScreen(RND_PANEL);
+    rndText(&fonts::DejaVu12, MC_DATUM, RND_DIM, RND_PANEL, "OUT OF TOKENS", RND_C, 84);
+    rndCross(RND_C - 80, 172, 60, RND_DIM);
+    rndCross(RND_C + 80, 172, 60, RND_DIM);
+    // The flatline, with one faint blip drifting along it now and then.
+    const int y = 262, x0 = 70, x1 = RND - 70;
+    c.drawFastHLine(x0, y, x1 - x0, RND_DIM);
+    c.drawFastHLine(x0, y + 1, x1 - x0, RND_DIM);
+    int bx = x0 + (int)((now / 20) % 900);
+    if (bx < x1 - 24) {
+      c.drawLine(bx, y, bx + 8, y - 14, RND_CREAM);
+      c.drawLine(bx + 8, y - 14, bx + 16, y + 10, RND_CREAM);
+      c.drawLine(bx + 16, y + 10, bx + 24, y, RND_CREAM);
+    }
+    rndText(&fonts::DejaVu12, MC_DATUM, RND_DIM, RND_PANEL, "back when your limit resets", RND_C, 296);
+    if (rndClockSet()) {
+      char hm[6];
+      snprintf(hm, sizeof(hm), "%02u:%02u", _clkTm.Hours, _clkTm.Minutes);
+      rndText(&fonts::DejaVu24, MC_DATUM, RND_DIM, RND_PANEL, hm, RND_C, 336);
+    }
+    rndDots(RND_DIM, rndBlend(RND_PANEL, RND_DIM, 0.35f));
+    return;
+  }
+
   int mood = activeState;
   if (rndLyingDown && (mood == P_IDLE || mood == P_SLEEP)) {
     uint32_t still = now - max(lastInteractMs, rndLyingSince);

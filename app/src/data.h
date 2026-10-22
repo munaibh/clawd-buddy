@@ -25,7 +25,26 @@ struct TamaState {
 #endif
   char     said[96];         // the start of Claude's last reply, from a turn event
   uint32_t saidAt;           // when it arrived
+  bool     limitHit;         // Claude said it hit a usage limit; cleared once it's working again
 };
+
+// Whether some text from the desktop says Claude has run into a usage or
+// rate limit. The bridge has no field for that, so this goes by the wording
+// Claude uses when it happens.
+static bool _mentionsLimit(const char* s) {
+  static const char* const PHRASES[] = {
+    "usage limit", "rate limit", "limit reached", "limit resets", "hit your limit", "reached your limit",
+    "out of tokens", "out of credits", "credit balance is too low", "quota exceeded",
+  };
+  if (!s || !*s) return false;
+  char low[160];
+  size_t n = 0;
+  for (; s[n] && n < sizeof(low) - 1; n++) low[n] = (char)tolower((unsigned char)s[n]);
+  low[n] = 0;
+  for (const char* p : PHRASES)
+    if (strstr(low, p)) return true;
+  return false;
+}
 
 // ---------------------------------------------------------------------------
 // Three modes, checked in priority order:
@@ -110,6 +129,8 @@ static void _applyJson(const char* line, TamaState* out) {
         }
         out->said[n] = 0;
         out->saidAt = millis();
+        // A reply that's about the limit means it's hit; any other reply means it's working again.
+        out->limitHit = _mentionsLimit(text);
       }
     }
     _lastLiveMs = millis();
@@ -142,7 +163,13 @@ static void _applyJson(const char* line, TamaState* out) {
   if (doc["tokens"].is<uint32_t>()) statsOnBridgeTokens(bridgeTokens);
   out->tokensToday = doc["tokens_today"] | out->tokensToday;
   const char* m = doc["msg"];
-  if (m) { strncpy(out->msg, m, sizeof(out->msg)-1); out->msg[sizeof(out->msg)-1]=0; }
+  if (m) {
+    bool changed = strcmp(out->msg, m) != 0;
+    strncpy(out->msg, m, sizeof(out->msg)-1); out->msg[sizeof(out->msg)-1]=0;
+    // The limit message sets it; fresh activity about anything else clears it.
+    if (_mentionsLimit(m)) out->limitHit = true;
+    else if (changed && (doc["running"] | 0) > 0) out->limitHit = false;
+  }
   JsonArray la = doc["entries"];
   if (!la.isNull()) {
     uint8_t n = 0;
@@ -154,6 +181,8 @@ static void _applyJson(const char* line, TamaState* out) {
     }
     if (n != out->nLines || (n > 0 && strcmp(out->lines[n-1], out->msg) != 0)) {
       out->lineGen++;
+      // A new line about the limit, at either end since the newest could be first or last.
+      if (n && (_mentionsLimit(out->lines[0]) || _mentionsLimit(out->lines[n-1]))) out->limitHit = true;
     }
     out->nLines = n;
   }
@@ -220,6 +249,7 @@ inline void dataPoll(TamaState* out) {
 
   out->connected = dataConnected();
   if (!out->connected) {
+    out->limitHit = false;
     out->sessionsTotal=0; out->sessionsRunning=0; out->sessionsWaiting=0;
     out->recentlyCompleted=false; out->lastUpdated=now;
     strncpy(out->msg, "No Claude connected", sizeof(out->msg)-1);
