@@ -368,22 +368,9 @@ def face_down(wp):
 
 
 if __name__ == "__main__":
-    export(bed().translate((0, 0, BED_T)), "clawd_bed.stl")
-    bl = blanket().rotate((0, 0, 0), (0, 1, 0), 180)                     # top down on the print bed
-    export(bl.translate((0, 0, -bl.val().BoundingBox().zmin)), "clawd_bed_blanket.stl")
-    for t in (18, 25):
-        export(claw_print(t), f"clawd_cable_claw_{t}mm.stl")
-    export(lay_flat(hat_party()), "clawd_hat_party.stl")
-    export(lay_flat(hat_beanie()), "clawd_hat_beanie.stl")
+    # The hats in clawd.3mf. The bed, cable claw, other hats and arm pieces are still drawn above, for when they're wanted.
     export(lay_flat(hat_crown()), "clawd_hat_crown.stl")
-    export(lay_flat(hat_gradcap(), flip=True), "clawd_hat_gradcap.stl")
     export(lay_flat(hat_top(), flip=True), "clawd_hat_top.stl")
     export(lay_flat(hat_top_brim()), "clawd_hat_top_brim.stl")
-    export(lay_flat(hat_propeller()), "clawd_hat_propeller.stl")
-    export(propeller(), "clawd_hat_propeller_blades.stl")
-    export(propeller_cap(), "clawd_hat_propeller_cap.stl")
     export(lay_flat(hat_duck()), "clawd_hat_duck.stl")
     export(lay_flat(hat_ladybug()), "clawd_hat_ladybug.stl")
-    export(face_down(arm_magnifier()), "clawd_arm_magnifier.stl")
-    export(face_down(arm_flag(True)), "clawd_arm_flag_pass.stl")
-    export(face_down(arm_flag(False)), "clawd_arm_flag_fail.stl")

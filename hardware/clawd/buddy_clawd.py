@@ -254,8 +254,6 @@ if __name__ == "__main__":
     export(shell(), "clawd_shell_angled.stl")
     export(plate(), "clawd_plate.stl")
     export(back(), "clawd_back_flat.stl")
-    export(back(key_clip=True), "clawd_back_flat_key.stl")
-    export(key(), "clawd_key.stl")
     export(spacer(), "clawd_spacer.stl")
     for slim in (0.2, 0.4):
         export(plunger(0, mark=True, slim=slim), f"clawd_plunger_pwr_angled_slim{round(slim * 10)}.stl")

@@ -23,8 +23,8 @@ Based on Anthropic's
 - **`release/`** - versioned firmware images per board variant, plus
   `meta/VERSION.txt` and `meta/CHANGELOG.md`. Written by `app/`'s build,
   read by `web/`. It sits beside both because it belongs to neither.
-- **`hardware/`** - Waveshare's 3D model of the board (STEP + STL) and the
-  printable Clawd-shaped case in `hardware/clawd/`, with its own README.
+- **`hardware/`** - the printable Clawd-shaped case in `hardware/clawd/`,
+  with its own README and a Bambu Studio project.
 - **`docs/`** - `REFERENCE.md`, the Bluetooth protocol the desktop app speaks.
 
 ## Firmware variants
