@@ -1,5 +1,10 @@
 [
     {
+        "version": "0.2.0",
+        "note": "Clawd shows what Claude is doing under his eyes while it works, in a dark speech panel on his face, and chimes when a job finishes, showing just that job's reply. He plays dead when Claude hits a usage limit and comes back when it's working again.",
+        "date": "2026-11-01"
+    },
+    {
         "version": "0.1.0",
         "note": "First release for the Waveshare ESP32-S3-Touch-LCD-1.46B: approve or deny Claude's permission requests from the round touchscreen, Clawd's face with mood eyes, clock and battery, mute/brightness/sleep controls, night mode, wake on lift, and softer chimes. Flipped variant for the Clawd case.",
         "date": "2026-10-17"
